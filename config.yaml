@@ -40,3 +40,5 @@ agents:
 repos:
     .fullsend:
         enabled: false
+    fullsend:
+        enabled: true
