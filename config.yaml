@@ -13,6 +13,7 @@ defaults:
         - fullsend
         - triage
         - coder
+        - fix
         - review
         - retro
         - prioritize
@@ -26,6 +27,9 @@ agents:
       name: fullsend-ai-triage
       slug: fullsend-ai-triage
     - role: coder
+      name: fullsend-ai-coder
+      slug: fullsend-ai-coder
+    - role: fix
       name: fullsend-ai-coder
       slug: fullsend-ai-coder
     - role: review
