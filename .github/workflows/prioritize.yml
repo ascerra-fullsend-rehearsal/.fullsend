@@ -106,4 +106,3 @@ jobs:
           GITHUB_ISSUE_URL: ${{ fromJSON(inputs.event_payload).issue.html_url }}
         with:
           agent: prioritize
-          version: feat/2577-level1-telemetry
