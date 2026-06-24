@@ -35,7 +35,7 @@ jobs:
       - name: Checkout upstream scripts
         uses: actions/checkout@v6
         with:
-          repository: ascerra-fullsend-rehearsal/fullsend
+          repository: fullsend-ai/fullsend
           ref: v0
           path: .defaults
           sparse-checkout: |
@@ -58,7 +58,7 @@ jobs:
 
       - name: Mint fullsend token
         id: app-token
-        uses: ascerra-fullsend-rehearsal/fullsend/.github/actions/mint-token@main
+        uses: fullsend-ai/fullsend/.github/actions/mint-token@v0
         with:
           role: fullsend
           repos: ${{ steps.repo-list.outputs.names }}
