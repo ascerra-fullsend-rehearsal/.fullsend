@@ -35,9 +35,6 @@ on:
         type: string
         description: "Human instruction (workflow_dispatch manual fallback)"
 
-# Single concurrency group per PR. A human /fix cancels any running fix
-# (bot or human) so the human's instruction takes immediate effect.
-# Bot-triggered runs also cancel previous bot runs on the same PR.
 concurrency:
   group: >-
     fullsend-fix-${{ inputs.source_repo }}-${{
@@ -59,7 +56,6 @@ jobs:
       instruction: ${{ inputs.instruction || '' }}
       mint_url: ${{ vars.FULLSEND_MINT_URL }}
       gcp_region: ${{ vars.FULLSEND_GCP_REGION }}
-      fullsend_version: feat/2577-level1-telemetry
     secrets:
       FULLSEND_GCP_WIF_PROVIDER: ${{ secrets.FULLSEND_GCP_WIF_PROVIDER }}
       FULLSEND_GCP_PROJECT_ID: ${{ secrets.FULLSEND_GCP_PROJECT_ID }}
