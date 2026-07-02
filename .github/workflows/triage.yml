@@ -26,8 +26,7 @@ concurrency:
 
 jobs:
   triage:
-    # TEMPORARY (#2862 L2 validation): fork branch with OTEL passthrough; restore to fullsend-ai/...@v0 after
-    uses: dhshah13/fullsend/.github/workflows/reusable-triage.yml@feat/2862-level2-otlp
+    uses: fullsend-ai/fullsend/.github/workflows/reusable-triage.yml@v0
     with:
       event_type: ${{ inputs.event_type }}
       source_repo: ${{ inputs.source_repo }}
@@ -37,4 +36,3 @@ jobs:
     secrets:
       FULLSEND_GCP_WIF_PROVIDER: ${{ secrets.FULLSEND_GCP_WIF_PROVIDER }}
       FULLSEND_GCP_PROJECT_ID: ${{ secrets.FULLSEND_GCP_PROJECT_ID }}
-      OTEL_EXPORTER_OTLP_TRACES_HEADERS: ${{ secrets.OTEL_EXPORTER_OTLP_TRACES_HEADERS }}
