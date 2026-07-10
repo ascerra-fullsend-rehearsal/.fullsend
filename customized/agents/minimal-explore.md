@@ -4,12 +4,12 @@ description: >-
   Lightweight GitHub exploration agent for rehearsal testing. Reads a
   pre-fetched GitHub issue + repo context bundle and writes a short
   structured summary. Does not call the GitHub API from the sandbox.
-tools: Bash(jq,cat,head,grep,wc,ls)
 model: sonnet
 skills: []
 disallowedTools: >-
   Bash(git push *), Bash(git push),
-  Bash(gh *), Bash(curl *)
+  Bash(gh *), Bash(curl *),
+  Bash(wget *)
 ---
 
 # Minimal Explore Agent
@@ -67,9 +67,15 @@ Extract:
 
 ### Phase 2: Write the result
 
-Write ONLY to `$FULLSEND_OUTPUT_DIR/agent-result.json` (no markdown fences):
+You MUST create the file `$FULLSEND_OUTPUT_DIR/agent-result.json` using a
+real tool call (Write or Bash). Do NOT only print the JSON in chat — the
+harness validates the file on disk.
 
-```json
+Example with Bash:
+
+```bash
+mkdir -p "$FULLSEND_OUTPUT_DIR"
+cat > "$FULLSEND_OUTPUT_DIR/agent-result.json" <<'EOF'
 {
   "status": "complete",
   "issue": {
@@ -96,6 +102,7 @@ Write ONLY to `$FULLSEND_OUTPUT_DIR/agent-result.json` (no markdown fences):
   "confidence": 80,
   "summary": "Concise paragraph of what you learned (under 500 characters)."
 }
+EOF
 ```
 
 ## Constraints
