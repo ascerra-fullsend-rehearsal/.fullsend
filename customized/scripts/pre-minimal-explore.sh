@@ -49,7 +49,7 @@ gh api "repos/${SOURCE_REPO}" \
 gh api "repos/${SOURCE_REPO}/languages" > "${WORKSPACE}/languages.json"
 
 gh api "repos/${SOURCE_REPO}/contents/" \
-  --jq '[.[] | {name, type, path, size}]' \
+  --jq '[.[].name]' \
   > "${WORKSPACE}/top-level.json"
 
 gh issue list --repo "${SOURCE_REPO}" --state open --limit 15 \
