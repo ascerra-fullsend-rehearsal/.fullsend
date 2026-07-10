@@ -24,6 +24,10 @@ repos:
         enabled: false
     fullsend:
         enabled: true
+agents:
+    # Lightweight explore agent for rehearsal testing (local customized/ overlay).
+    # Workflow: .github/workflows/minimal-explore.yml
+    - source: harness/minimal-explore.yaml
 allowed_remote_resources:
     - https://raw.githubusercontent.com/fullsend-ai/fullsend/
     - https://raw.githubusercontent.com/fullsend-ai/agents/

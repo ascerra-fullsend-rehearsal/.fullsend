@@ -1,0 +1,46 @@
+agent: agents/minimal-explore.md
+model: sonnet
+image: ghcr.io/fullsend-ai/fullsend-sandbox:latest
+policy: policies/minimal-explore.yaml
+
+role: triage
+slug: fullsend-ai-triage
+
+host_files:
+  - src: env/gcp-vertex.env
+    dest: /sandbox/workspace/.env.d/gcp-vertex.env
+    expand: true
+  - src: ${GOOGLE_APPLICATION_CREDENTIALS}
+    dest: /tmp/.gcp-credentials.json
+  - src: ${GCP_OIDC_TOKEN_FILE}
+    dest: /sandbox/workspace/.gcp-oidc-token
+    optional: true
+  - src: env/minimal-explore.env
+    dest: /sandbox/workspace/.env.d/minimal-explore.env
+  - src: /tmp/workspace/issue-context.json
+    dest: /sandbox/workspace/issue-context.json
+    optional: true
+
+skills: []
+
+pre_script: scripts/pre-minimal-explore.sh
+
+validation_loop:
+  script: scripts/validate-output-schema.sh
+  max_iterations: 2
+
+post_script: scripts/post-minimal-explore.sh
+
+env:
+  runner:
+    SOURCE_REPO: ${SOURCE_REPO}
+    ISSUE_NUMBER: ${ISSUE_NUMBER}
+    DRY_RUN: ${DRY_RUN}
+    GH_TOKEN: ${GH_TOKEN}
+    FULLSEND_OUTPUT_SCHEMA: ${FULLSEND_DIR}/schemas/minimal-explore-result.schema.json
+  sandbox:
+    # No GH_TOKEN in the sandbox — GitHub reads happen in the pre-script.
+    SOURCE_REPO: "${SOURCE_REPO}"
+    ISSUE_NUMBER: "${ISSUE_NUMBER}"
+
+timeout_minutes: 10

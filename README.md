@@ -1,2 +1,45 @@
 # .fullsend
-fullsend configuration for ascerra-fullsend-rehearsal
+
+fullsend configuration for ascerra-fullsend-rehearsal.
+
+## Custom agents
+
+### minimal-explore
+
+Lightweight GitHub exploration agent for rehearsing agent-pipeline changes.
+Inspired by the [konflux-ci/refinement](https://github.com/konflux-ci/refinement)
+explore agent, but stripped down to:
+
+1. Fetch a GitHub issue + repo context on the host (pre-script)
+2. Summarize the pre-fetched bundle in the sandbox (no GitHub egress)
+3. Post a short summary comment (post-script)
+
+**Trigger from an enrolled-repo issue comment** (after this lands on `main`):
+
+```text
+/minimal-explore
+```
+
+Aliases: `/explore`, `/fs-explore`, `/fs-minimal-explore`
+
+Comment on an issue in `ascerra-fullsend-rehearsal/fullsend` (write access
+required). The shim forwards the comment to `.fullsend` dispatch, which
+routes stage `minimal-explore` to this workflow.
+
+**Trigger (manual):**
+
+```bash
+gh workflow run minimal-explore.yml \
+  --repo ascerra-fullsend-rehearsal/.fullsend \
+  -f source_repo=ascerra-fullsend-rehearsal/fullsend \
+  -f issue_number=1 \
+  -f dry_run=false
+```
+
+Or: Actions → Minimal Explore → Run workflow.
+
+Use `dry_run=true` to exercise the agent without posting an issue comment.
+
+> Note: `dispatch.yml` is normally scaffold-managed. The `/explore` routing
+> branch is a rehearsal customization and may need re-applying if
+> `repo-maintenance` regenerates dispatch from upstream.
