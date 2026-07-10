@@ -6,6 +6,8 @@ description: >-
   structured summary. Does not call the GitHub API from the sandbox.
 model: sonnet
 skills: []
+tools: >-
+  Read, Write, Glob, Grep, Bash
 disallowedTools: >-
   Bash(git push *), Bash(git push),
   Bash(gh *), Bash(curl *),
@@ -25,37 +27,18 @@ summarize.
 
 ## Inputs
 
-Environment variables set by the pre-script / harness:
+- Issue context file (always this path): `/sandbox/workspace/issue-context.json`
+- Result file (always this path): `/sandbox/workspace/output/agent-result.json`
+- `SOURCE_REPO` / `ISSUE_NUMBER` may also be set in the environment
 
-- `ISSUE_CONTEXT` — path to `issue-context.json` (fetched on the host)
-- `SOURCE_REPO` — `owner/repo` being explored
-- `ISSUE_NUMBER` — GitHub issue number
-- `FULLSEND_OUTPUT_DIR` — where to write your result
+Do **not** rely on `$FULLSEND_OUTPUT_DIR` or `$ISSUE_CONTEXT` env vars —
+use the absolute paths above. The Write tool does not expand shell variables.
 
 ## Process
 
 ### Phase 1: Read the pre-fetched context
 
-```bash
-echo "::notice::PHASE 1: Read issue context"
-cat "$ISSUE_CONTEXT" | jq '{
-  source,
-  source_repo,
-  issue: {number: .issue.number, title: .issue.title, state: .issue.state, labels: .issue.labels},
-  repo,
-  languages,
-  top_level_entries,
-  open_issues: [.open_issues[] | {number, title, labels}],
-  readme_chars: (.readme | length)
-}'
-```
-
-Then read the issue body and README text:
-
-```bash
-jq -r '.issue.body // ""' "$ISSUE_CONTEXT" | head -c 8000
-jq -r '.readme // ""' "$ISSUE_CONTEXT" | head -c 8000
-```
+Use the Read tool on `/sandbox/workspace/issue-context.json`.
 
 Extract:
 
@@ -65,17 +48,39 @@ Extract:
 - Any related open issues that look relevant
 - Key terms from the README that inform the issue
 
-### Phase 2: Write the result
-
-You MUST create the file `$FULLSEND_OUTPUT_DIR/agent-result.json` using a
-real tool call (Write or Bash). Do NOT only print the JSON in chat — the
-harness validates the file on disk.
-
-Example with Bash:
+Optional: use Bash only for small `jq` extractions if helpful:
 
 ```bash
-mkdir -p "$FULLSEND_OUTPUT_DIR"
-cat > "$FULLSEND_OUTPUT_DIR/agent-result.json" <<'EOF'
+jq '{
+  source,
+  source_repo,
+  issue: {number: .issue.number, title: .issue.title, state: .issue.state, labels: .issue.labels},
+  repo,
+  languages,
+  top_level_entries,
+  open_issues: [.open_issues[] | {number, title, labels}],
+  readme_chars: (.readme | length)
+}' /sandbox/workspace/issue-context.json
+```
+
+### Phase 2: Write the result
+
+You MUST create the file at exactly:
+
+`/sandbox/workspace/output/agent-result.json`
+
+Use the Write tool with that absolute path (create parent dir first if needed):
+
+```bash
+mkdir -p /sandbox/workspace/output
+```
+
+Then Write the JSON. Do NOT only print the JSON in chat — the harness
+validates the file on disk under `output/`.
+
+Example JSON shape:
+
+```json
 {
   "status": "complete",
   "issue": {
@@ -102,7 +107,6 @@ cat > "$FULLSEND_OUTPUT_DIR/agent-result.json" <<'EOF'
   "confidence": 80,
   "summary": "Concise paragraph of what you learned (under 500 characters)."
 }
-EOF
 ```
 
 ## Constraints
@@ -110,7 +114,7 @@ EOF
 - You do NOT write code, create issues, post comments, or modify anything.
   Your only output is the JSON result file.
 - You do NOT call `gh`, `curl`, or the network. Everything you need is in
-  `$ISSUE_CONTEXT`.
+  `/sandbox/workspace/issue-context.json`.
 - You do NOT fabricate context. If the bundle lacks information, say so in
   `findings` and lower `confidence`.
 - Prefer breadth over depth.
@@ -120,5 +124,5 @@ EOF
 
 ## Output rules
 
-- Write ONLY the JSON file. No other output files.
+- Write ONLY the JSON file at `/sandbox/workspace/output/agent-result.json`.
 - The JSON must be valid and parseable. No markdown fences around it.
