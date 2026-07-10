@@ -162,6 +162,13 @@ jobs:
                     STAGE="prioritize"
                   fi
                   ;;
+                /explore|/minimal-explore|/fs-explore|/fs-minimal-explore)
+                  # Rehearsal-only custom agent (minimal-explore). Maps to the
+                  # triage role gate below — mint has no dedicated explore role.
+                  if [[ "${COMMENT_USER_TYPE}" != "Bot" ]] && is_authorized; then
+                    STAGE="minimal-explore"
+                  fi
+                  ;;
                 *)
                   # Intentionally weaker gate: allows external reporters to
                   # re-trigger triage by providing clarification on needs-info
@@ -348,6 +355,7 @@ jobs:
           case "$STAGE" in
             code|fix) STAGE_ROLE="coder" ;;
             retro|prioritize) STAGE_ROLE="fullsend" ;;
+            minimal-explore) STAGE_ROLE="triage" ;;
           esac
 
           ROLES=$(yq '.defaults.roles[]' config.yaml 2>/dev/null || echo "")

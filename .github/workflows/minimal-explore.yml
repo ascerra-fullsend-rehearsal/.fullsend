@@ -1,19 +1,30 @@
 # fullsend-stage: minimal-explore
 name: Minimal Explore
-run-name: 'minimal-explore · ${{ inputs.source_repo }}#${{ inputs.issue_number }}'
+run-name: "minimal-explore · ${{ inputs.source_repo }}"
 
 on:
   workflow_dispatch:
     inputs:
+      event_type:
+        description: "Event source (issue_comment from dispatch, or manual)"
+        required: false
+        type: string
+        default: "manual"
       source_repo:
-        description: "Owner/repo to explore (must be enrolled, e.g. ascerra-fullsend-rehearsal/fullsend)"
+        description: "Owner/repo to explore (must be enrolled)"
         required: true
         type: string
         default: "ascerra-fullsend-rehearsal/fullsend"
-      issue_number:
-        description: "GitHub issue number to explore"
-        required: true
+      event_payload:
+        description: "JSON payload from dispatch (contains issue.number / issue.html_url)"
+        required: false
         type: string
+        default: '{"issue":{"number":0}}'
+      issue_number:
+        description: "Issue number for manual runs (ignored when event_payload has a real issue.number)"
+        required: false
+        type: string
+        default: ""
       dry_run:
         description: "Skip posting the issue comment (still runs the agent)"
         required: false
@@ -24,7 +35,7 @@ on:
         default: "false"
 
 concurrency:
-  group: fullsend-minimal-explore-${{ inputs.source_repo }}-${{ inputs.issue_number }}
+  group: fullsend-minimal-explore-${{ inputs.source_repo }}-${{ inputs.issue_number != '' && inputs.issue_number || fromJSON(inputs.event_payload).issue.number }}
   cancel-in-progress: true
 
 jobs:
@@ -78,21 +89,50 @@ jobs:
           echo "Harness files:"
           ls -la harness/ || true
 
+      - name: Resolve parameters
+        id: params
+        env:
+          INPUT_SOURCE_REPO: ${{ inputs.source_repo }}
+          INPUT_EVENT_PAYLOAD: ${{ inputs.event_payload }}
+          INPUT_ISSUE_NUMBER: ${{ inputs.issue_number }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+
+          SOURCE_REPO="${INPUT_SOURCE_REPO}"
+          if [[ ! "${SOURCE_REPO}" =~ ^[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+$ ]]; then
+            echo "::error::source_repo format invalid"
+            exit 1
+          fi
+
+          ISSUE_NUMBER=""
+          if [[ -n "${INPUT_EVENT_PAYLOAD}" ]]; then
+            # SECURITY: extract only the numeric issue number via jq — never
+            # interpolate raw payload strings into shell.
+            ISSUE_NUMBER=$(printf '%s' "${INPUT_EVENT_PAYLOAD}" | jq -r '.issue.number // empty' 2>/dev/null || true)
+            # Treat the workflow default placeholder (0) as unset.
+            if [[ "${ISSUE_NUMBER}" == "0" ]]; then
+              ISSUE_NUMBER=""
+            fi
+          fi
+          if [[ -z "${ISSUE_NUMBER}" ]]; then
+            ISSUE_NUMBER="${INPUT_ISSUE_NUMBER}"
+          fi
+          if [[ -z "${ISSUE_NUMBER}" || ! "${ISSUE_NUMBER}" =~ ^[0-9]+$ ]]; then
+            echo "::error::issue number required (via event_payload.issue.number or issue_number input)"
+            exit 1
+          fi
+
+          echo "source_repo=${SOURCE_REPO}" >> "${GITHUB_OUTPUT}"
+          echo "issue_number=${ISSUE_NUMBER}" >> "${GITHUB_OUTPUT}"
+          echo "dry_run=${INPUT_DRY_RUN:-false}" >> "${GITHUB_OUTPUT}"
+          echo "::notice::minimal-explore source_repo=${SOURCE_REPO} issue=#${ISSUE_NUMBER} dry_run=${INPUT_DRY_RUN:-false}"
+
       - name: Validate enrollment and extract repo metadata
         id: repo-parts
         uses: fullsend-ai/fullsend/.github/actions/validate-enrollment@v0
         with:
-          source_repo: ${{ inputs.source_repo }}
-
-      - name: Validate issue number
-        env:
-          ISSUE_NUMBER: ${{ inputs.issue_number }}
-        run: |
-          set -euo pipefail
-          if [[ ! "${ISSUE_NUMBER}" =~ ^[0-9]+$ ]]; then
-            echo "::error::issue_number must be a positive integer"
-            exit 1
-          fi
+          source_repo: ${{ steps.params.outputs.source_repo }}
 
       - name: Mint triage token
         id: app-token
@@ -112,9 +152,9 @@ jobs:
         env:
           AGENT_PREFIX: MINIMAL_EXPLORE_
           MINIMAL_EXPLORE_GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          MINIMAL_EXPLORE_SOURCE_REPO: ${{ inputs.source_repo }}
-          MINIMAL_EXPLORE_ISSUE_NUMBER: ${{ inputs.issue_number }}
-          MINIMAL_EXPLORE_DRY_RUN: ${{ inputs.dry_run }}
+          MINIMAL_EXPLORE_SOURCE_REPO: ${{ steps.params.outputs.source_repo }}
+          MINIMAL_EXPLORE_ISSUE_NUMBER: ${{ steps.params.outputs.issue_number }}
+          MINIMAL_EXPLORE_DRY_RUN: ${{ steps.params.outputs.dry_run }}
           MINIMAL_EXPLORE_ANTHROPIC_VERTEX_PROJECT_ID: ${{ secrets.FULLSEND_GCP_PROJECT_ID }}
           MINIMAL_EXPLORE_CLOUD_ML_REGION: ${{ vars.FULLSEND_GCP_REGION }}
         run: bash .github/scripts/setup-agent-env.sh

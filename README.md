@@ -14,6 +14,18 @@ explore agent, but stripped down to:
 2. Inspect the target repo via the GitHub API (agent)
 3. Post a short summary comment (post-script)
 
+**Trigger from an enrolled-repo issue comment** (after this lands on `main`):
+
+```text
+/minimal-explore
+```
+
+Aliases: `/explore`, `/fs-explore`, `/fs-minimal-explore`
+
+Comment on an issue in `ascerra-fullsend-rehearsal/fullsend` (write access
+required). The shim forwards the comment to `.fullsend` dispatch, which
+routes stage `minimal-explore` to this workflow.
+
 **Trigger (manual):**
 
 ```bash
@@ -27,3 +39,7 @@ gh workflow run minimal-explore.yml \
 Or: Actions → Minimal Explore → Run workflow.
 
 Use `dry_run=true` to exercise the agent without posting an issue comment.
+
+> Note: `dispatch.yml` is normally scaffold-managed. The `/explore` routing
+> branch is a rehearsal customization and may need re-applying if
+> `repo-maintenance` regenerates dispatch from upstream.
