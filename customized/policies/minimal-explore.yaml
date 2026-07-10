@@ -1,5 +1,12 @@
 version: 1
 
+# Sandbox policy for minimal-explore.
+#
+# GitHub data is fetched on the host by the pre-script — the sandbox does
+# not need api.github.com. Vertex AI is required for inference.
+# curl is intentionally excluded from vertex binaries to prevent
+# disallowedTools bypass via raw HTTP.
+
 filesystem_policy:
   include_workdir: true
   read_only: [/usr, /lib, /proc, /dev/urandom, /app, /etc, /var/log]
@@ -9,3 +16,21 @@ landlock:
 process:
   run_as_user: sandbox
   run_as_group: sandbox
+
+network_policies:
+  vertex_ai:
+    name: vertex-ai
+    endpoints:
+      - host: "api.anthropic.com"
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        access: read-write
+      - host: "*.googleapis.com"
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        access: read-write
+    binaries:
+      - path: "**/claude"
+      - path: "**/node"

@@ -10,8 +10,8 @@ Lightweight GitHub exploration agent for rehearsing agent-pipeline changes.
 Inspired by the [konflux-ci/refinement](https://github.com/konflux-ci/refinement)
 explore agent, but stripped down to:
 
-1. Fetch a GitHub issue (pre-script)
-2. Inspect the target repo via the GitHub API (agent)
+1. Fetch a GitHub issue + repo context on the host (pre-script)
+2. Summarize the pre-fetched bundle in the sandbox (no GitHub egress)
 3. Post a short summary comment (post-script)
 
 **Trigger from an enrolled-repo issue comment** (after this lands on `main`):
